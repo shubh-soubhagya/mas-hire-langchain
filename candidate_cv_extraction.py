@@ -62,3 +62,4 @@ def fast_process_pdfs(directory_path, output_filename = CANDIDATE_DATA):
 if __name__ == "__main__":
     # Using your specific directory 'CVDemo'
     fast_process_pdfs(r"CVDemo")
+    
