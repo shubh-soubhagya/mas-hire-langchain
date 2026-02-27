@@ -1,0 +1,16 @@
+1. study 
+2. llm workflows and agents
+3. tools and agent
+4. thread and process
+5. code with hand
+6. langchain 
+7. bind tools
+8. llm
+9. prompts
+10. 1 fastapi endpoint 
+
+# AGENTIC UPGRADE
+- Shifted from sequential workflow (app.py) to autonomous agent (agent_main.py)
+- Tools: extract, enrich, match, list, email, status
+- Agent: LangGraph ReAct Agent (looping decision maker)
+- Logic: Agent checks status -> fills gaps -> emails shortlist
