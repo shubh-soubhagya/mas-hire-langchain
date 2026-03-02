@@ -1,5 +1,3 @@
-# main.py
-
 import os
 from dotenv import load_dotenv
 
@@ -9,17 +7,7 @@ from langchain.messages import SystemMessage, HumanMessage
 
 from pipeline_tools import PIPELINE_TOOLS
 
-
-# ---------------------------------------------------
-# LOAD ENV VARIABLES
-# ---------------------------------------------------
-
 load_dotenv()
-
-
-# ---------------------------------------------------
-# LLM (MASTER BRAIN)
-# ---------------------------------------------------
 
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",
@@ -27,20 +15,10 @@ llm = ChatGroq(
     groq_api_key=os.getenv("GROQ_API_KEY")
 )
 
-
-# ---------------------------------------------------
-# CREATE MASTER AGENT
-# ---------------------------------------------------
-
 agent = create_agent(
     model=llm,
     tools=PIPELINE_TOOLS
 )
-
-
-# ---------------------------------------------------
-# ENTRY POINT
-# ---------------------------------------------------
 
 if __name__ == "__main__":
 
@@ -84,7 +62,6 @@ Process the CVs, extract details, match them, and email the candidates.
 
     print("\n✅ FINAL RESULT:\n")
 
-    # Get last AI message (final summary)
     final_message = result["messages"][-1].content
 
     print(final_message)

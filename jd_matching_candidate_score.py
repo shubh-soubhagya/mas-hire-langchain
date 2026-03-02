@@ -10,9 +10,6 @@ from langchain.messages import HumanMessage
 
 load_dotenv()
 
-
-# ---------------- SCHEMA ----------------
-
 class MatchSchema(BaseModel):
     """Schema for job-resume matching results."""
     score: int = Field(description="Match score between 0 and 100")
@@ -21,26 +18,16 @@ class MatchSchema(BaseModel):
     )
     job_title: str = Field(description="Job title evaluated")
 
-
-# ---------------- TOOL ----------------
-
 @tool(args_schema=MatchSchema)
 def record_job_match(score: int, reason: str, job_title: str) -> str:
     """Registers a job match evaluation."""
     return f"Match Recorded: {job_title} - Score: {score}%"
 
-
-# ---------------- AGENT (SIMPLIFIED TO LLM) ----------------
-
-# ✅ Single LLM instance for matching
 EVAL_LLM = ChatGroq(
     model="llama-3.3-70b-versatile",
     temperature=0,
     groq_api_key=os.getenv("GROQ_API_KEY")
 ).with_structured_output(MatchSchema)
-
-
-# ---------------- EVALUATION ----------------
 
 def evaluate_fit(resume_text: str, jd_text: str, job_title: str) -> dict:
     """
@@ -72,15 +59,11 @@ def evaluate_fit(resume_text: str, jd_text: str, job_title: str) -> dict:
             "job_title": job_title
         }
 
-
-# ---------------- PIPELINE ----------------
-
 def run_matching_pipeline(file_path: str, jd_path: str):
     """Run matching between candidate CSV and JD CSV."""
     
     print(f"\n--- Loading CSVs for matching ---")
     
-    # Robust CSV reading
     try:
         df = pd.read_csv(file_path, encoding='utf-8', encoding_errors='replace')
     except Exception as e:
@@ -97,7 +80,6 @@ def run_matching_pipeline(file_path: str, jd_path: str):
         print("⚠ Candidate Dataframe is empty. Aborting matching.")
         return
 
-    # Initialize columns if missing
     for col in ['match_score', 'match_reason', 'best_matched_job']:
         if col not in df.columns:
             df[col] = None
@@ -141,6 +123,5 @@ def run_matching_pipeline(file_path: str, jd_path: str):
         df.at[idx, 'match_reason'] = best_match.get("reason")
         df.at[idx, 'best_matched_job'] = best_match.get("title")
 
-    # Final save
     df.to_csv(file_path, index=False)
     print(f"✅ Done! Matching results saved to {file_path}\n")

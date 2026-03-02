@@ -16,26 +16,16 @@ class CandidateInfo(BaseModel):
     phone: str = Field(description="Full phone number exactly as written")
     email: str = Field(description="Email address of the candidate")
 
-
-# ---------------- TOOL ----------------
-
 @tool(args_schema=CandidateInfo)
 def extract_candidate_details_tool(name: str, phone: str, email: str) -> str:
     """Stores extracted candidate information."""
     return f"Processed candidate: {name} | {email} | {phone}"
 
-
-# ---------------- AGENT (SIMPLIFIED TO LLM) ----------------
-
-# ✅ Single LLM instance for extraction
 EXTRACTOR_LLM = ChatGroq(
     model="llama-3.3-70b-versatile",
     temperature=0,
     groq_api_key=os.getenv("GROQ_API_KEY")
 ).with_structured_output(CandidateInfo)
-
-
-# ---------------- PROCESS FUNCTION ----------------
 
 def process_resume_content(content: str) -> dict:
     """

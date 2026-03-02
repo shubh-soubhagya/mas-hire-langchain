@@ -11,14 +11,9 @@ from langchain.tools import tool
 
 load_dotenv()
 
-# ---------------- CONFIG ----------------
-
 CLIENT_SECRET_FILE = r'credentials/credentials_email.json'
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 CSV_PATH = r"outputs/fast_pdf_metadata.csv"
-
-
-# ---------------- GMAIL AUTH ----------------
 
 def get_gmail_service():
     flow = InstalledAppFlow.from_client_secrets_file(
@@ -47,9 +42,6 @@ def send_message(service, user_id, message):
 
     return message['id']
 
-
-# ---------------- EMAIL TEMPLATE ----------------
-
 def draft_email_content(name, role):
     return f"""
 Dear {name},
@@ -66,9 +58,6 @@ Please share your availability for a brief introductory call.
 Best Regards,
 Recruitment Team | PrashnaAI
 """
-
-
-# ---------------- AGENT TOOL ----------------
 
 @tool
 def send_shortlisted_emails(csv_path: str = CSV_PATH,
@@ -91,8 +80,6 @@ def send_shortlisted_emails(csv_path: str = CSV_PATH,
     if "match_score" not in df.columns:
         return f"ERROR: 'match_score' not found in {csv_path}. Run matching first."
 
-    # Convert percentage → numeric
-    # Convert percentage → numeric safely
     try:
         df['score_numeric'] = (
             df['match_score']
@@ -103,7 +90,7 @@ def send_shortlisted_emails(csv_path: str = CSV_PATH,
 
         df['score_numeric'] = pd.to_numeric(
             df['score_numeric'],
-            errors="coerce"   # <- KEY FIX
+            errors="coerce"   
         )
 
     except Exception as e:
