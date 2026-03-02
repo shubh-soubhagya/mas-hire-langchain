@@ -1,0 +1,48 @@
+pdf_name,path,content,author,subject,candidate_name,email_id,phone_number,match_score,match_reason,best_matched_job
+C1061.pdf,CVDemo\C1061.pdf,"Candidate Resume (ID: C1061)
+Name: Alyssa Chavez
+Email: alyssachavez88@gmail.com
+Phone: +1-465-3587
+Education
+Diploma in Software Engineering (2013-2015)
+Hands-on experience in full-stack web development and mobile app creation.
+Work Experience
+Data Scientist at ABC Inc. (2019-2023)
+Built predictive models that enhanced decision-making processes, reducing operational costs by
+25%.
+Skills
+Cybersecurity - Skilled in penetration testing, risk assessment, and securing enterprise networks
+against cyber threats.
+Certifications
+AWS Certified Solutions Architect - Validated expertise in designing and deploying scalable AWS
+solutions, optimizing performance and security.
+Achievements
+Published a research paper on AI ethics - Contributed to an AI ethics framework adopted by industry
+leaders, shaping responsible AI development.
+Tech Stack
+Java, Spring Boot, MySQL, Kafka, Azure DevOps",,,Alyssa Chavez,alyssachavez88@gmail.com,+1-465-3587,60%,"The candidate has experience in full-stack web development and mobile app creation, and has skills in Java, which is one of the preferred programming languages. However, the candidate's recent work experience is as a Data Scientist, which may indicate a gap in direct software engineering experience. The candidate also has a certification in AWS solutions architecture, but the job description does not specifically mention cloud experience as a requirement.",Software Engineer
+C1070.pdf,CVDemo\C1070.pdf,"Candidate Resume (ID: C1070)
+Name: Scott Saunders
+Email: scottsaunders13@gmail.com
+Phone: +1-367-5130
+Education
+Bachelor of Engineering in Information Technology (2014-2018)
+Concentrated on database management, networking, and cybersecurity.
+Master of Business Administration (2017-2019)
+Focused on Business Strategy, Financial Analysis, and Operations Management.
+Ph.D. in Artificial Intelligence (2016-2021)
+Research in NLP and Computer Vision, with publications in top-tier conferences.
+Work Experience
+Software Engineer at XYZ Corp (2018-2022)
+Developed scalable backend applications, improved system efficiency by 30%, and led agile
+development sprints.
+Skills
+Python & Machine Learning - Proficient in TensorFlow, PyTorch, and Scikit-learn with hands-on
+experience in deploying AI solutions.
+Certifications
+AWS Certified Solutions Architect - Validated expertise in designing and deploying scalable AWS
+solutions, optimizing performance and security.
+Achievements Developed an AI chatbot - Built a chatbot that reduced customer support tickets by 40%, enhancing
+user experience and efficiency.
+Tech Stack
+Python, TensorFlow, PyTorch, PostgreSQL, Docker, Kubernetes",,,Scott Saunders,scottsaunders13@gmail.com,+1-367-5130,80%,"The candidate has a strong background in software development, with proficiency in Python and experience with databases, web development, and software frameworks, which aligns with the job requirements. However, the candidate's expertise in AI and machine learning may not be directly applicable to the software engineer role, and there is a potential gap in the candidate's experience with Java or C++ programming languages.",Software Engineer

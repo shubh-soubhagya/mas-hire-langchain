@@ -1,125 +1,146 @@
-import pandas as pd
-import time
 import os
-from typing import Dict
-from concurrent.futures import ThreadPoolExecutor
+import pandas as pd
 from pydantic import BaseModel, Field
-from langchain_ollama import ChatOllama
-from langchain_core.tools import tool
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import JsonOutputParser
-from tqdm import tqdm # Install via: pip install tqdm
+from dotenv import load_dotenv
+
+from langchain_groq import ChatGroq
+from langchain.agents import create_agent
+from langchain.tools import tool
+from langchain.messages import HumanMessage
+
+load_dotenv()
+
+
+# ---------------- SCHEMA ----------------
 
 class MatchSchema(BaseModel):
-    score: int = Field(description="Match score 0-100")
-    reason: str = Field(description="Short 2-sentence explanation")
+    """Schema for job-resume matching results."""
+    score: int = Field(description="Match score between 0 and 100")
+    reason: str = Field(
+        description="Two sentences: S1 shared skills. S2 main fit or gap."
+    )
+    job_title: str = Field(description="Job title evaluated")
 
-# Setup Model
-llm = ChatOllama(model="gemma2:2b", temperature=0)
-parser = JsonOutputParser(pydantic_object=MatchSchema)
 
-@tool
-def calculate_job_fit(resume_text: str, jd_text: str) -> Dict:
-    """Compares a resume against a JD with internal retry logic."""
-    
-    # ADD THE ADAPTABLE PROMPT HERE
-    system_prompt = (
-        "You are a Precision Recruitment Auditor. Your task is to match a candidate to a specific Job Description (JD).\n\n"
-        "STRICT CONSTRAINTS:\n"
-        "1. ADAPTABILITY: Do not assume every role is a Software Engineer. Use the specific Job Title from the JD to evaluate fit.\n"
-        "2. NO HALLUCINATIONS: Only mention skills, tools, or experience explicitly stated in the Resume. "
-        "If a skill is in the JD but NOT in the Resume, treat it as a gap.\n"
-        "3. REASONING: Provide a 2-sentence explanation. "
-        "Sentence 1 must list specific technical keywords shared by both. "
-        "Sentence 2 must state the primary reason for the score based on the specific JD requirements.\n"
-        "4. BATCH YEAR: Prioritize Skills and Experience.\n\n"
-        "{format_instructions}"
+# ---------------- TOOL ----------------
+
+@tool(args_schema=MatchSchema)
+def record_job_match(score: int, reason: str, job_title: str) -> str:
+    """Registers a job match evaluation."""
+    return f"Match Recorded: {job_title} - Score: {score}%"
+
+
+# ---------------- AGENT (SIMPLIFIED TO LLM) ----------------
+
+# ✅ Single LLM instance for matching
+EVAL_LLM = ChatGroq(
+    model="llama-3.3-70b-versatile",
+    temperature=0,
+    groq_api_key=os.getenv("GROQ_API_KEY")
+).with_structured_output(MatchSchema)
+
+
+# ---------------- EVALUATION ----------------
+
+def evaluate_fit(resume_text: str, jd_text: str, job_title: str) -> dict:
+    """
+    Uses LLM with structured output to evaluate resume vs JD.
+    """
+
+    prompt = (
+        f"You are a Precision Recruitment Auditor.\n"
+        f"Evaluate resume against job role: {job_title}.\n\n"
+        "Rules:\n"
+        "1. No hallucinations\n"
+        "2. Identify skill overlap and gaps\n"
+        "3. Rank fit strictly between 0-100\n\n"
+        f"JOB DESCRIPTION:\n{jd_text[:1500]}\n\n"
+        f"RESUME:\n{resume_text[:2000]}"
     )
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        ("human", "TARGET JOB DESCRIPTION:\n{jd}\n\nCANDIDATE RESUME CONTENT:\n{resume}")
-    ])
+    try:
+        result = EVAL_LLM.invoke(prompt)
+        return {
+            "status": "success",
+            "result": result
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "score": 0,
+            "reason": str(e),
+            "job_title": job_title
+        }
+
+
+# ---------------- PIPELINE ----------------
+
+def run_matching_pipeline(file_path: str, jd_path: str):
+    """Run matching between candidate CSV and JD CSV."""
     
-    chain = prompt | llm | parser
+    print(f"\n--- Loading CSVs for matching ---")
     
-    for attempt in range(2):
-        try:
-            return chain.invoke({
-                "resume": resume_text[:2000],
-                "jd": jd_text[:1500],
-                "format_instructions": parser.get_format_instructions()
-            })
-        except Exception:
-            time.sleep(0.5)
-    return {"score": 0, "reason": "Failed to extract"}
+    # Robust CSV reading
+    try:
+        df = pd.read_csv(file_path, encoding='utf-8', encoding_errors='replace')
+    except Exception as e:
+        print(f"Warning: Primary CSV read failed ({e}). Trying with latin1...")
+        df = pd.read_csv(file_path, encoding='latin1')
 
+    try:
+        j_df = pd.read_csv(jd_path, encoding='utf-8', encoding_errors='replace')
+    except Exception as e:
+        print(f"Warning: JD CSV read failed ({e}). Trying with latin1...")
+        j_df = pd.read_csv(jd_path, encoding='latin1')
 
-def match_single_candidate(args):
-    c_idx, c_row, j_df = args
-    best_score = -1
-    best_data = {}
+    if df.empty:
+        print("⚠ Candidate Dataframe is empty. Aborting matching.")
+        return
 
-    for _, j_row in j_df.iterrows():
-        res = calculate_job_fit.func(str(c_row['content']), str(j_row['Job Description']))
-        
-        if res['score'] > best_score:
-            best_score = res['score']
-            best_data = {
-                "match_score": f"{res['score']}%",
-                "match_reason": res['reason'],
-                "best_matched_job": j_row['Job Title']
-            }
-            
-    return best_data
-
-def run_matching_pipeline(file_path, jd_path):
-    def safe_load(path):
-        try:
-            return pd.read_csv(path, encoding='utf-8')
-        except UnicodeDecodeError:
-            return pd.read_csv(path, encoding='cp1252')
-
-    df = safe_load(file_path)
-    j_df = safe_load(jd_path)
-    
-    # Ensure necessary columns exist
+    # Initialize columns if missing
     for col in ['match_score', 'match_reason', 'best_matched_job']:
         if col not in df.columns:
             df[col] = None
 
-    # CHECKING MECHANISM: Identify rows where data is missing
-    # We filter for rows where 'match_score' is null or empty
-    mask = df['match_score'].isna() | (df['match_score'] == "")
-    rows_to_process = df[mask]
+    print(f"--- Matching {len(df)} candidates against {len(j_df)} jobs ---")
 
-    if rows_to_process.empty:
-        print("--- All rows already processed. No new data to find. ---")
-        return
+    for idx, c_row in df.iterrows():
+        print(f"Processing Candidate {idx+1}/{len(df)}...")
+        
+        best_score = -1
+        best_match = {"score": "0%", "reason": "No match found", "title": "N/A"}
 
-    print(f"--- Processing {len(rows_to_process)} remaining candidates ---")
+        # Optimization: Only process first 10 jobs to avoid long delays
+        job_limit = min(len(j_df), 10)
+        
+        for j_idx, j_row in j_df.head(job_limit).iterrows():
+            print(f"  Evaluating candidate {idx+1} against job {j_idx+1} ({j_row['Job Title']})...")
+            
+            # Basic sanity check for content
+            if pd.isna(c_row.get('content')) or str(c_row['content']).strip() == "":
+                continue
+                
+            result = evaluate_fit(
+                resume_text=str(c_row['content']),
+                jd_text=str(j_row.get('Job Description', '')),
+                job_title=str(j_row.get('Job Title', 'Unknown'))
+            )
 
-    tasks = [(idx, row, j_df) for idx, row in rows_to_process.iterrows()]
-    
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        list_results = list(tqdm(
-            executor.map(match_single_candidate, tasks), 
-            total=len(rows_to_process), 
-            desc="Updating Rows"
-        ))
+            if result["status"] == "success":
+                data = result["result"]
+                current_score = data.score
+                if current_score > best_score:
+                    best_score = current_score
+                    best_match = {
+                        "score": f"{current_score}%",
+                        "reason": data.reason,
+                        "title": data.job_title
+                    }
 
-    # Update only the specific rows in the original dataframe
-    for i, (idx, _, _) in enumerate(tasks):
-        df.at[idx, 'match_score'] = list_results[i]['match_score']
-        df.at[idx, 'match_reason'] = list_results[i]['match_reason']
-        df.at[idx, 'best_matched_job'] = list_results[i]['best_matched_job']
+        df.at[idx, 'match_score'] = best_match.get("score")
+        df.at[idx, 'match_reason'] = best_match.get("reason")
+        df.at[idx, 'best_matched_job'] = best_match.get("title")
 
-    # Save directly back to the source file
+    # Final save
     df.to_csv(file_path, index=False)
-    print(f"\n--- Success! {file_path} updated in-place. ---")
-
-if __name__ == "__main__":
-    # Now using the same file as both input and output
-    target_file = r"outputs\fast_pdf_metadata.csv"
-    jd_file = r"JD\job_description_Demo.csv"
-    run_matching_pipeline(target_file, jd_file)
+    print(f"✅ Done! Matching results saved to {file_path}\n")
