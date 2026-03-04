@@ -3,5 +3,7 @@
 CVHub
 venv
 credentials
+__pycache__
+*.pyc
 
 
