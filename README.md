@@ -23,8 +23,24 @@ A fully autonomous recruitment pipeline built with **LangChain**, **Groq** LLMs,
    pip install -r requirements.txt
    ```
 3. **Configure environment variables**
-   - Copy the provided `.env.example` to `.env`
-   - Add your `GROQ_API_KEY`, Gmail `CLIENT_ID`, `CLIENT_SECRET`, and `REFRESH_TOKEN`.
+   - Copy the provided `.env.example` to `.env` (or create one manually).
+   - Add your `GROQ_API_KEY`.
+   - Add your Gmail `CLIENT_ID`, `CLIENT_SECRET`, and `REFRESH_TOKEN` from the Google Cloud Console.
+
+## Google Cloud API Credentials
+ To use the automated email feature, you must set up a Google Cloud Project with the Gmail API enabled:
+
+1.  **Create a Project**: Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2.  **Enable Gmail API**: Search for "Gmail API" and click **Enable**.
+3.  **Configure OAuth Consent Screen**:
+    - Select "External" (or "Internal" if using a workspace).
+    - Add `https://www.googleapis.com/auth/gmail.send` to scopes.
+    - Add your email as a **Test User**.
+4.  **Create Credentials**:
+    - Go to **Credentials** > **Create Credentials** > **OAuth client ID**.
+    - Select **Desktop app**.
+    - Download the `json` file or copy the `Client ID` and `Client Secret`.
+5.  **Get Refresh Token**: Use a script or the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/) to generate a long-lived `REFRESH_TOKEN` with the `https://www.googleapis.com/auth/gmail.send` scope.
 
 ## Usage
 Run the pipeline with a single command:
